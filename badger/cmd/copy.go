@@ -7,7 +7,7 @@ import (
 
 var outputDir string
 
-// backupCmd represents the backup command
+// copyCmd represents the copy command.
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "Copy Badger database.",
@@ -50,16 +50,21 @@ func doCopy(cmd *cobra.Command, args []string) error {
 		})
 		defer iter.Close()
 		for iter.Rewind(); iter.Valid(); iter.Next() {
-			batch := dest.NewWriteBatch()
-			defer batch.Cancel()
+			err := func() error { // Provides tighter scope for the defer inside.
+				batch := dest.NewWriteBatch()
+				defer batch.Cancel()
 
-			val, err := iter.Item().ValueCopy(nil)
-			if err != nil {
-				return err
-			}
+				val, err := iter.Item().ValueCopy(nil)
+				if err != nil {
+					return err
+				}
 
-			batch.Set(iter.Item().Key(), val)
-			err = batch.Flush()
+				err = batch.Set(iter.Item().Key(), val)
+				if err != nil {
+					return err
+				}
+				return batch.Flush()
+			}()
 			if err != nil {
 				return err
 			}

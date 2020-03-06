@@ -144,6 +144,7 @@ func (lf *logFile) read(p valuePointer, s *y.Slice) (buf []byte, err error) {
 	}
 	y.NumReads.Add(1)
 	y.NumBytesRead.Add(nbr)
+	y.LightstepMetrics.RecordVLogRead(int64(offset), nbr)
 	return buf, err
 }
 
@@ -446,6 +447,7 @@ func (vlog *valueLog) rewrite(f *logFile, tr trace.Trace) error {
 	}
 	tr.LazyPrintf("Processed %d entries in %d loops", len(wb), loops)
 	tr.LazyPrintf("Total entries: %d. Moved: %d", count, moved)
+	y.LightstepMetrics.NumGCReadsForRewriting.Add(int64(count))
 	tr.LazyPrintf("Removing fid: %d", f.fid)
 	var deleteFileNow bool
 	// Entries written to LSM. Remove the older file now.
@@ -1309,6 +1311,8 @@ func (vlog *valueLog) doRunGC(lf *logFile, discardRatio float64, tr trace.Trace)
 		}
 		return nil
 	})
+
+	y.LightstepMetrics.NumGCReadsForProbing.Add(int64(r.count))
 
 	if err != nil {
 		tr.LazyPrintf("Error while iterating for RunGC: %v", err)

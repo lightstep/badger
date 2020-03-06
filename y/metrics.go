@@ -66,3 +66,48 @@ func init() {
 	VlogSize = expvar.NewMap("badger_vlog_size_bytes")
 	PendingWrites = expvar.NewMap("badger_pending_writes_total")
 }
+
+// Temporary Lightstep extras.
+type lightstepMetrics struct {
+	numLSMReads             *expvar.Int
+	numLSMLogicalBytesRead  *expvar.Int
+	numLSMPhysicalBytesRead *expvar.Int // Assuming 4KB block size.
+
+	numVLogReads             *expvar.Int
+	numVLogLogicalBytesRead  *expvar.Int
+	numVLogPhysicalBytesRead *expvar.Int // Assuming 4KB block size.
+
+	NumGCReadsForProbing   *expvar.Int
+	NumGCReadsForRewriting *expvar.Int
+}
+
+var LightstepMetrics *lightstepMetrics = &lightstepMetrics{
+	numLSMReads:              expvar.NewInt("lightstep_badger_num_lsm_reads"),
+	numLSMLogicalBytesRead:   expvar.NewInt("lightstep_badger_num_lsm_logical_bytes_read"),
+	numLSMPhysicalBytesRead:  expvar.NewInt("lightstep_badger_num_lsm_physical_bytes_read"),
+	numVLogReads:             expvar.NewInt("lightstep_badger_num_vlog_reads"),
+	numVLogLogicalBytesRead:  expvar.NewInt("lightstep_badger_num_vlog_logical_bytes_read"),
+	numVLogPhysicalBytesRead: expvar.NewInt("lightstep_badger_num_vlog_physical_bytes_read"),
+	NumGCReadsForProbing:     expvar.NewInt("lightstep_badger_num_gc_reads_for_probing"),
+	NumGCReadsForRewriting:   expvar.NewInt("lightstep_badger_num_gc_reads_for_rewriting"),
+}
+
+const blockSize = 4 * 1024
+
+func (metrics *lightstepMetrics) RecordLSMRead(offset int64, size int64) {
+	metrics.numLSMReads.Add(1)
+	metrics.numLSMLogicalBytesRead.Add(size)
+
+	start := (offset / blockSize)
+	limit := (offset+size)/blockSize + 1 // Exclusive.
+	metrics.numLSMPhysicalBytesRead.Add((limit - start) * blockSize)
+}
+
+func (metrics *lightstepMetrics) RecordVLogRead(offset int64, size int64) {
+	metrics.numVLogReads.Add(1)
+	metrics.numVLogLogicalBytesRead.Add(size)
+
+	start := (offset / blockSize)
+	limit := (offset+size)/blockSize + 1 // Exclusive.
+	metrics.numVLogPhysicalBytesRead.Add((limit - start) * blockSize)
+}

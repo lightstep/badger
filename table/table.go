@@ -202,6 +202,8 @@ func (t *Table) Close() error {
 }
 
 func (t *Table) read(off, sz int) ([]byte, error) {
+	y.LightstepMetrics.RecordLSMRead(int64(off), int64(sz))
+
 	if len(t.mmap) > 0 {
 		if len(t.mmap[off:]) < sz {
 			return nil, y.ErrEOF

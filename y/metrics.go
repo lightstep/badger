@@ -99,8 +99,8 @@ func (metrics *lightstepMetrics) RecordLSMRead(offset int64, size int64) {
 	metrics.numLSMLogicalBytesRead.Add(size)
 
 	start := (offset / blockSize)
-	limit := (offset + size) / blockSize // Inclusive.
-	metrics.numLSMPhysicalBytesRead.Add((limit - start + 1) * blockSize)
+	limit := (offset+size)/blockSize + 1 // Exclusive.
+	metrics.numLSMPhysicalBytesRead.Add((limit - start) * blockSize)
 }
 
 func (metrics *lightstepMetrics) RecordVLogRead(offset int64, size int64) {
@@ -108,6 +108,6 @@ func (metrics *lightstepMetrics) RecordVLogRead(offset int64, size int64) {
 	metrics.numVLogLogicalBytesRead.Add(size)
 
 	start := (offset / blockSize)
-	limit := (offset + size) / blockSize // Inclusive.
-	metrics.numVLogPhysicalBytesRead.Add((limit - start + 1) * blockSize)
+	limit := (offset+size)/blockSize + 1 // Exclusive.
+	metrics.numVLogPhysicalBytesRead.Add((limit - start) * blockSize)
 }
